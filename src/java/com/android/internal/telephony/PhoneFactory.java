@@ -129,8 +129,6 @@ public class PhoneFactory {
                 }
 
                 sPhoneNotifier = new DefaultPhoneNotifier();
-                TelephonyComponentFactory telephonyComponentFactory
-                    = TelephonyComponentFactory.getInstance();
 
                 // Get preferred network mode
                 int preferredNetworkMode = RILConstants.PREFERRED_NETWORK_MODE;
@@ -179,8 +177,8 @@ public class PhoneFactory {
                     }
                 }
                 Rlog.i(LOG_TAG, "Creating SubscriptionController");
-                telephonyComponentFactory.initSubscriptionController(
-                        context, sCommandsInterfaces);
+                SubscriptionController.init(context, sCommandsInterfaces);
+
                 // Instantiate UiccController so that all other classes can just
                 // call getInstance()
                 sUiccController = UiccController.make(context, sCommandsInterfaces);
@@ -189,15 +187,15 @@ public class PhoneFactory {
                     Phone phone = null;
                     int phoneType = TelephonyManager.getPhoneType(networkModes[i]);
                     if (phoneType == PhoneConstants.PHONE_TYPE_GSM) {
-                        phone = telephonyComponentFactory.makePhone(context,
+                        phone = new GsmCdmaPhone(context,
                                 sCommandsInterfaces[i], sPhoneNotifier, i,
                                 PhoneConstants.PHONE_TYPE_GSM,
-                                telephonyComponentFactory);
+                                TelephonyComponentFactory.getInstance());
                     } else if (phoneType == PhoneConstants.PHONE_TYPE_CDMA) {
-                        phone = telephonyComponentFactory.makePhone(context,
+                        phone = new GsmCdmaPhone(context,
                                 sCommandsInterfaces[i], sPhoneNotifier, i,
                                 PhoneConstants.PHONE_TYPE_CDMA,
-                                telephonyComponentFactory);
+                                TelephonyComponentFactory.getInstance());
                     }
                     Rlog.i(LOG_TAG, "Creating Phone with type = " + phoneType + " sub = " + i);
 
@@ -226,8 +224,8 @@ public class PhoneFactory {
                 sMadeDefaults = true;
 
                 Rlog.i(LOG_TAG, "Creating SubInfoRecordUpdater ");
-                sSubInfoRecordUpdater = telephonyComponentFactory.makeSubscriptionInfoUpdater(
-                        context, sPhones, sCommandsInterfaces);
+                sSubInfoRecordUpdater = new SubscriptionInfoUpdater(context,
+                        sPhones, sCommandsInterfaces);
                 SubscriptionController.getInstance().updatePhonesAvailability(sPhones);
 
                 // Start monitoring after defaults have been made.
@@ -250,8 +248,7 @@ public class PhoneFactory {
 
                 sSubscriptionMonitor = new SubscriptionMonitor(tr, sContext, sc, numPhones);
 
-                sPhoneSwitcher = telephonyComponentFactory.
-                        makePhoneSwitcher (MAX_ACTIVE_PHONES, numPhones,
+                sPhoneSwitcher = new PhoneSwitcher(MAX_ACTIVE_PHONES, numPhones,
                         sContext, sc, Looper.myLooper(), tr, sCommandsInterfaces,
                         sPhones);
 
@@ -264,9 +261,6 @@ public class PhoneFactory {
                             sPhoneSwitcher, sc, sSubscriptionMonitor, Looper.myLooper(),
                             sContext, i, sPhones[i].mDcTracker);
                 }
-
-                telephonyComponentFactory.makeExtTelephonyClasses(
-                        context, sPhones, sCommandsInterfaces);
             }
         }
     }
